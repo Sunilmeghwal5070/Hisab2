@@ -1,0 +1,6 @@
+{
+  "name": "HISAB",
+  "description": "Your Work. Your Money. Your Records. Premium Attendance, Salary & Financial Records Manager.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
