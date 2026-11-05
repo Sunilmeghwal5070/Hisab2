@@ -88,9 +88,10 @@ fun PaymentsScreen(
     var showAddDialog by remember { mutableStateOf(false) }
     var showSuccessOverlay by remember { mutableStateOf(false) }
 
-    val totalSalary = payments.sumOf { it.amount } + 5000.0 // matching reference ₹20,000
-    val totalReceived = payments.sumOf { it.amount }.coerceAtLeast(15000.0)
-    val totalPending = (totalSalary - totalReceived).coerceAtLeast(5000.0)
+    val hisab by viewModel.currentMonthHisab.collectAsState()
+    val totalReceived = payments.sumOf { it.amount }
+    val totalSalary = hisab?.totalEarned ?: 0.0
+    val totalPending = (totalSalary - totalReceived).coerceAtLeast(0.0)
 
     Scaffold(
         topBar = {

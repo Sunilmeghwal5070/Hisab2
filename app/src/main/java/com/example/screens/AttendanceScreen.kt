@@ -30,9 +30,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,7 +59,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.components.QuickAttendanceSheetContent
 import com.example.data.models.Attendance
 import com.example.data.models.AttendanceStatus
 import com.example.ui.theme.BackgroundLight
@@ -77,9 +79,11 @@ import com.example.viewmodels.KaamKhataViewModel
 @Composable
 fun AttendanceScreen(
     viewModel: KaamKhataViewModel,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {}
 ) {
     val selectedJob by viewModel.selectedJob.collectAsState()
+    val jobs by viewModel.jobs.collectAsState()
     val attendanceList by viewModel.jobAttendanceList.collectAsState()
 
     val currentYearMonth = remember { java.time.YearMonth.now() }
@@ -87,6 +91,7 @@ fun AttendanceScreen(
     var selectedDay by remember { mutableStateOf(if (today.year == currentYearMonth.year && today.month == currentYearMonth.month) today.dayOfMonth else 1) }
     var showEditSheet by remember { mutableStateOf(false) }
     var showSuccessOverlay by remember { mutableStateOf(false) }
+    var showJobDropdown by remember { mutableStateOf(false) }
 
     val attendanceMap = attendanceList.associateBy { it.dateIso }
     val monthPrefix = String.format("%04d-%02d", currentYearMonth.year, currentYearMonth.monthValue)
@@ -118,10 +123,10 @@ fun AttendanceScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) {
+                    IconButton(onClick = onNavigateToHome) {
                         Icon(
-                            imageVector = Icons.Default.CalendarMonth,
-                            contentDescription = "Calendar",
+                            imageVector = Icons.Default.Home,
+                            contentDescription = "Home",
                             tint = RoyalBlue
                         )
                     }
@@ -138,166 +143,50 @@ fun AttendanceScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // 1. Two Filter Dropdowns
+            // 1. Two Filter Dropdowns (Interactive Job & Month selector)
             item {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    FilterPill(title = monthTitle, modifier = Modifier.weight(1f))
-                    FilterPill(title = "This Month", modifier = Modifier.weight(1f))
-                }
-            }
-
-            // 2. Calendar Card
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(14.dp)) {
-                        // Weekday labels (Sun, Mon, Tue, Wed, Thu, Fri, Sat)
-                        val weekdays = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceAround
+                    Box(modifier = Modifier.weight(1f)) {
+                        FilterPill(
+                            title = selectedJob?.title ?: "Select Job",
+                            onClick = { showJobDropdown = true }
+                        )
+                        DropdownMenu(
+                            expanded = showJobDropdown,
+                            onDismissRequest = { showJobDropdown = false }
                         ) {
-                            weekdays.forEach { dayName ->
-                                Text(
-                                    text = dayName,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TextSecondary,
-                                    textAlign = TextAlign.Center,
-                                    modifier = Modifier.weight(1f)
+                            jobs.forEach { job ->
+                                DropdownMenuItem(
+                                    text = { Text(job.title, fontWeight = FontWeight.Bold) },
+                                    onClick = {
+                                        viewModel.selectJob(job.id)
+                                        showJobDropdown = false
+                                    }
                                 )
                             }
                         }
-
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        // Dynamic Calendar Grid calculation
-                        val firstDayOfWeek = currentYearMonth.atDay(1).dayOfWeek.value % 7
-                        val lengthOfMonth = currentYearMonth.lengthOfMonth()
-                        val prevMonth = currentYearMonth.minusMonths(1)
-                        val lengthOfPrevMonth = prevMonth.lengthOfMonth()
-
-                        val daysGrid = mutableListOf<List<Pair<Int, Boolean>>>()
-                        val currentWeek = mutableListOf<Pair<Int, Boolean>>()
-
-                        for (i in (firstDayOfWeek - 1) downTo 0) {
-                            currentWeek.add(Pair(lengthOfPrevMonth - i, false))
-                        }
-
-                        for (day in 1..lengthOfMonth) {
-                            currentWeek.add(Pair(day, true))
-                            if (currentWeek.size == 7) {
-                                daysGrid.add(currentWeek.toList())
-                                currentWeek.clear()
-                            }
-                        }
-
-                        var nextMonthDay = 1
-                        while (currentWeek.isNotEmpty() && currentWeek.size < 7) {
-                            currentWeek.add(Pair(nextMonthDay++, false))
-                        }
-                        if (currentWeek.isNotEmpty()) {
-                            daysGrid.add(currentWeek.toList())
-                        }
-
-                        daysGrid.forEach { rowDays ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 4.dp),
-                                horizontalArrangement = Arrangement.SpaceAround,
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                rowDays.forEach { (day, isCurrentMonth) ->
-                                    val dateStr = if (isCurrentMonth) String.format("%04d-%02d-%02d", currentYearMonth.year, currentYearMonth.monthValue, day) else ""
-                                    val att = if (isCurrentMonth) attendanceMap[dateStr] else null
-                                    val isSelected = isCurrentMonth && day == selectedDay
-                                    val isToday = isCurrentMonth && day == today.dayOfMonth && currentYearMonth.year == today.year && currentYearMonth.month == today.month
-
-                                    CalendarDayCircle(
-                                        day = day,
-                                        isCurrentMonth = isCurrentMonth,
-                                        attendance = att,
-                                        isSelected = isSelected,
-                                        isToday = isToday,
-                                        onClick = {
-                                            if (isCurrentMonth) {
-                                                selectedDay = day
-                                                showEditSheet = true
-                                            }
-                                        },
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
-                            }
-                        }
                     }
-                }
-            }
 
-            // 3. Attendance Summary Card
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(
-                            text = "Attendance Summary",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                    Box(modifier = Modifier.weight(1f)) {
+                        FilterPill(
+                            title = monthTitle,
+                            onClick = {}
                         )
-
-                        Spacer(modifier = Modifier.height(14.dp))
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(10.dp)
-                        ) {
-                            SummaryStatBox(
-                                count = presentCount.toString(),
-                                label = "Present",
-                                color = EmeraldGreen,
-                                bg = SoftGreen,
-                                modifier = Modifier.weight(1f)
-                            )
-                            SummaryStatBox(
-                                count = absentCount.toString(),
-                                label = "Absent",
-                                color = DangerRed,
-                                bg = SoftRed,
-                                modifier = Modifier.weight(1f)
-                            )
-                            SummaryStatBox(
-                                count = halfDayCount.toString(),
-                                label = "Half Day",
-                                color = WarningOrange,
-                                bg = SoftOrange,
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
                     }
                 }
             }
 
-            // 4. Selected Day Detail Card
+            // 2. Selected Day Detail / Today's Card (Placed right at the TOP as requested!)
             item {
                 val selectedDateStr = String.format("%04d-%02d-%02d", currentYearMonth.year, currentYearMonth.monthValue, selectedDay)
                 val selectedAtt = attendanceMap[selectedDateStr]
                 val formattedDisplayDate = try {
                     java.time.LocalDate.parse(selectedDateStr).format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy • EEEE", java.util.Locale.getDefault()))
                 } catch (e: Exception) {
-                    "$selectedDay ${monthTitle}"
+                    "$selectedDay $monthTitle"
                 }
 
                 Card(
@@ -313,7 +202,7 @@ fun AttendanceScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = formattedDisplayDate,
+                                text = "📅 $formattedDisplayDate",
                                 fontSize = 14.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = TextPrimary
@@ -386,11 +275,151 @@ fun AttendanceScreen(
                             horizontalArrangement = Arrangement.End
                         ) {
                             Text(
-                                text = "Mark / Edit →",
+                                text = "Mark / Edit Attendance →",
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold,
                                 color = RoyalBlue,
-                                modifier = Modifier.clickable { showEditSheet = true }
+                                modifier = Modifier
+                                    .clickable { showEditSheet = true }
+                                    .padding(4.dp)
+                            )
+                        }
+                    }
+                }
+            }
+
+            // 3. Calendar Grid Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(14.dp)) {
+                        val weekdays = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
+                            weekdays.forEach { dayName ->
+                                Text(
+                                    text = dayName,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TextSecondary,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        val firstDayOfWeek = currentYearMonth.atDay(1).dayOfWeek.value % 7
+                        val lengthOfMonth = currentYearMonth.lengthOfMonth()
+                        val prevMonth = currentYearMonth.minusMonths(1)
+                        val lengthOfPrevMonth = prevMonth.lengthOfMonth()
+
+                        val daysGrid = mutableListOf<List<Pair<Int, Boolean>>>()
+                        val currentWeek = mutableListOf<Pair<Int, Boolean>>()
+
+                        for (i in (firstDayOfWeek - 1) downTo 0) {
+                            currentWeek.add(Pair(lengthOfPrevMonth - i, false))
+                        }
+
+                        for (day in 1..lengthOfMonth) {
+                            currentWeek.add(Pair(day, true))
+                            if (currentWeek.size == 7) {
+                                daysGrid.add(currentWeek.toList())
+                                currentWeek.clear()
+                            }
+                        }
+
+                        var nextMonthDay = 1
+                        while (currentWeek.isNotEmpty() && currentWeek.size < 7) {
+                            currentWeek.add(Pair(nextMonthDay++, false))
+                        }
+                        if (currentWeek.isNotEmpty()) {
+                            daysGrid.add(currentWeek.toList())
+                        }
+
+                        daysGrid.forEach { rowDays ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                horizontalArrangement = Arrangement.SpaceAround,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                rowDays.forEach { (day, isCurrentMonth) ->
+                                    val dateStr = if (isCurrentMonth) {
+                                        String.format("%04d-%02d-%02d", currentYearMonth.year, currentYearMonth.monthValue, day)
+                                    } else ""
+                                    val att = if (isCurrentMonth) attendanceMap[dateStr] else null
+                                    val isSelected = isCurrentMonth && day == selectedDay
+                                    val isToday = isCurrentMonth && day == today.dayOfMonth && currentYearMonth.year == today.year && currentYearMonth.month == today.month
+
+                                    CalendarDayCircle(
+                                        day = day,
+                                        isCurrentMonth = isCurrentMonth,
+                                        attendance = att,
+                                        isSelected = isSelected,
+                                        isToday = isToday,
+                                        onClick = {
+                                            if (isCurrentMonth) {
+                                                selectedDay = day
+                                            }
+                                        },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. Monthly Statistics Summary Card
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(18.dp),
+                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Monthly Summary ($monthTitle)",
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            SummaryStatBox(
+                                count = presentCount.toString(),
+                                label = "Present",
+                                color = EmeraldGreen,
+                                bg = SoftGreen,
+                                modifier = Modifier.weight(1f)
+                            )
+                            SummaryStatBox(
+                                count = absentCount.toString(),
+                                label = "Absent",
+                                color = DangerRed,
+                                bg = SoftRed,
+                                modifier = Modifier.weight(1f)
+                            )
+                            SummaryStatBox(
+                                count = halfDayCount.toString(),
+                                label = "Half Day",
+                                color = WarningOrange,
+                                bg = SoftOrange,
+                                modifier = Modifier.weight(1f)
                             )
                         }
                     }
@@ -434,9 +463,9 @@ fun AttendanceScreen(
 }
 
 @Composable
-fun FilterPill(title: String, modifier: Modifier = Modifier) {
+fun FilterPill(title: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = modifier,
+        modifier = modifier.clickable(onClick = onClick),
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)

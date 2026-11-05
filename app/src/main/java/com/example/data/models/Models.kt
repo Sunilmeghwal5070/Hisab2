@@ -101,9 +101,9 @@ data class MonthlyHisab(
 )
 
 data class UserProfile(
-    val name: String = "Rohit Kumar",
-    val email: String = "rohit@gmail.com",
-    val phone: String = "+91 98765 43210",
+    val name: String = "",
+    val email: String = "",
+    val phone: String = "",
     val preferredLanguage: String = "hi",
     val isPinEnabled: Boolean = false,
     val pinCode: String = "1234",

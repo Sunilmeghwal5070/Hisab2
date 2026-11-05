@@ -134,8 +134,16 @@ fun ReportsScreen(
                     .fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // 1. Month Selector Dropdown Pill: [Apr 2025 ∨]
+                // 1. Month Selector Dropdown Pill
                 item {
+                    val yearMonth by viewModel.selectedYearMonth.collectAsState()
+                    val formattedMonth = remember(yearMonth) {
+                        try {
+                            java.time.YearMonth.of(yearMonth.first, yearMonth.second).format(java.time.format.DateTimeFormatter.ofPattern("MMM yyyy", java.util.Locale.getDefault()))
+                        } catch (e: Exception) {
+                            "This Month"
+                        }
+                    }
                     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                         Card(
                             modifier = Modifier.width(180.dp),
@@ -151,7 +159,7 @@ fun ReportsScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Text(
-                                    text = "Apr 2025",
+                                    text = formattedMonth,
                                     fontSize = 14.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary

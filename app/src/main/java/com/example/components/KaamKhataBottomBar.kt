@@ -62,19 +62,19 @@ fun KaamKhataBottomBar(
             .navigationBarsPadding(),
         contentAlignment = Alignment.BottomCenter
     ) {
-        // Main Navy Bar with rounded top
+        // Main Navy Bar with premium rounded top and shadow
         Surface(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(68.dp),
-            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                .height(72.dp),
+            shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
             color = NavyDark,
-            shadowElevation = 16.dp
+            shadowElevation = 24.dp
         ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 12.dp),
+                    .padding(horizontal = 14.dp),
                 horizontalArrangement = Arrangement.SpaceAround,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -131,13 +131,14 @@ fun KaamKhataBottomBar(
             }
         }
 
-        // Center Floating Action Button (+) with shimmer and spring press effect
+        // Center Floating Action Button (+) anchored securely above the navigation bar
         Box(
             modifier = Modifier
-                .offset(y = (-18).dp)
-                .size(54.dp)
+                .align(Alignment.TopCenter)
+                .offset(y = (-20).dp)
+                .size(56.dp)
                 .shadow(
-                    elevation = 12.dp,
+                    elevation = 16.dp,
                     shape = CircleShape,
                     spotColor = RoyalBlue,
                     ambientColor = RoyalBlue
@@ -145,7 +146,7 @@ fun KaamKhataBottomBar(
                 .clip(CircleShape)
                 .background(
                     Brush.linearGradient(
-                        colors = listOf(RoyalBlueLight, RoyalBlue)
+                        colors = listOf(Color(0xFF3B82F6), RoyalBlue, Color(0xFF1D4ED8))
                     )
                 )
                 .shimmerShine(durationMillis = 3500)
@@ -174,18 +175,12 @@ private fun BottomNavItem(
     modifier: Modifier = Modifier
 ) {
     val iconScale by animateFloatAsState(
-        targetValue = if (isSelected) 1.15f else 1f,
+        targetValue = if (isSelected) 1.18f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
         ),
         label = "navIconScale"
-    )
-
-    val alphaAnim by animateFloatAsState(
-        targetValue = if (isSelected) 1f else 0.5f,
-        animationSpec = spring(stiffness = Spring.StiffnessMedium),
-        label = "navAlpha"
     )
 
     Column(
@@ -196,14 +191,14 @@ private fun BottomNavItem(
                 indication = null,
                 onClick = onClick
             )
-            .padding(vertical = 6.dp),
+            .padding(vertical = 4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = label,
-            tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.55f),
+            tint = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
             modifier = Modifier
                 .size(22.dp)
                 .scale(iconScale)
@@ -212,14 +207,14 @@ private fun BottomNavItem(
             text = label,
             fontSize = 11.sp,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.55f),
+            color = if (isSelected) Color.White else Color.White.copy(alpha = 0.5f),
             modifier = Modifier.padding(top = 2.dp)
         )
         if (isSelected) {
             Box(
                 modifier = Modifier
                     .padding(top = 3.dp)
-                    .size(width = 14.dp, height = 3.dp)
+                    .size(width = 16.dp, height = 3.dp)
                     .clip(RoundedCornerShape(1.5.dp))
                     .background(com.example.ui.theme.PremiumCyan)
             )

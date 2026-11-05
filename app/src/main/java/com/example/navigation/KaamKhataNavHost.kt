@@ -186,7 +186,12 @@ fun KaamKhataNavHost(
                 composable("attendance") {
                     AttendanceScreen(
                         viewModel = viewModel,
-                        onBack = { navController.popBackStack() }
+                        onBack = { navController.popBackStack() },
+                        onNavigateToHome = {
+                            navController.navigate("home") {
+                                popUpTo("home") { inclusive = true }
+                            }
+                        }
                     )
                 }
 

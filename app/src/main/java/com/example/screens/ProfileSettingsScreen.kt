@@ -173,15 +173,10 @@ fun ProfileSettingsScreen(
                             Spacer(modifier = Modifier.width(14.dp))
                             Column {
                                 Text(
-                                    text = userProfile.name,
+                                    text = userProfile.name.ifEmpty { "User" },
                                     fontSize = 16.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = TextPrimary
-                                )
-                                Text(
-                                    text = userProfile.email,
-                                    fontSize = 12.sp,
-                                    color = TextSecondary
                                 )
                             }
                         }

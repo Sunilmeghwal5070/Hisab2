@@ -28,35 +28,24 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Business
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.CreditCard
-import androidx.compose.material.icons.filled.EventNote
-import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Notifications
-import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QueryBuilder
-import androidx.compose.material.icons.filled.Storage
-import androidx.compose.material.icons.filled.Timeline
 import androidx.compose.material.icons.filled.TrendingUp
-import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material.icons.filled.Work
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -78,10 +67,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.components.QuickAttendanceSheetContent
 import com.example.data.models.AttendanceStatus
 import com.example.ui.theme.BackgroundLight
-import com.example.ui.theme.CardBorder
 import com.example.ui.theme.CyanTeal
 import com.example.ui.theme.DangerRed
 import com.example.ui.theme.EmeraldGreen
@@ -120,14 +107,21 @@ fun HomeScreen(
     val jobs by viewModel.jobs.collectAsState()
     val selectedJob by viewModel.selectedJob.collectAsState()
     val hisab by viewModel.currentMonthHisab.collectAsState()
-    val daysWithoutBackup by viewModel.daysWithoutBackup.collectAsState()
     val attendanceList by viewModel.jobAttendanceList.collectAsState()
 
     var showJobDropdown by remember { mutableStateOf(false) }
     var showQuickMarkAttendanceSheet by remember { mutableStateOf(false) }
     var showSuccessOverlay by remember { mutableStateOf(false) }
+    var showTodayAttendancePopup by remember { mutableStateOf(false) }
 
     val todayStr = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd"))
+    val isTodayMarked = attendanceList.any { it.dateIso == todayStr }
+
+    androidx.compose.runtime.LaunchedEffect(attendanceList) {
+        if (!isTodayMarked) {
+            showTodayAttendancePopup = true
+        }
+    }
 
     val heroTotal = hisab?.totalEarned ?: 0.0
     val heroReceived = hisab?.totalReceived ?: 0.0
@@ -153,7 +147,7 @@ fun HomeScreen(
                 .padding(innerPadding),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            // 1. Dark Navy Top Header matching reference Screen 4
+            // 1. Dark Navy Top Header
             item {
                 Box(
                     modifier = Modifier
@@ -178,7 +172,7 @@ fun HomeScreen(
                                     color = Color.White.copy(alpha = 0.75f)
                                 )
                                 Text(
-                                    text = userProfile.name,
+                                    text = userProfile.name.ifEmpty { "User" },
                                     fontSize = 20.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = Color.White
@@ -189,7 +183,6 @@ fun HomeScreen(
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(10.dp)
                             ) {
-                                // User Avatar Circle
                                 Box(
                                     modifier = Modifier
                                         .size(42.dp)
@@ -205,7 +198,6 @@ fun HomeScreen(
                                     )
                                 }
 
-                                // Bell Icon with notification dot
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
@@ -219,7 +211,6 @@ fun HomeScreen(
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
-                                    // Notification badge
                                     Box(
                                         modifier = Modifier
                                             .align(Alignment.TopEnd)
@@ -268,7 +259,7 @@ fun HomeScreen(
                                         }
                                         Spacer(modifier = Modifier.width(10.dp))
                                         Text(
-                                            text = selectedJob?.title ?: "Site Engineer - ABC Infra",
+                                            text = selectedJob?.title ?: "Select Job / Work",
                                             fontSize = 14.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = TextPrimary
@@ -307,7 +298,7 @@ fun HomeScreen(
                 }
             }
 
-            // 2. Hero Card: Total Earned (₹18,500 ↑ 12%) matching reference Screen 4
+            // 2. Hero Card: Total Earned
             item {
                 Box(modifier = Modifier.padding(horizontal = 16.dp, vertical = 14.dp)) {
                     Card(
@@ -345,7 +336,6 @@ fun HomeScreen(
                                         fontWeight = FontWeight.Medium,
                                         color = Color.White.copy(alpha = 0.85f)
                                     )
-                                    // ↑ 12% Badge
                                     Row(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(12.dp))
@@ -370,10 +360,6 @@ fun HomeScreen(
                                 }
 
                                 Spacer(modifier = Modifier.height(4.dp))
-
-                                val heroTotal = hisab?.totalEarned ?: 18500.0
-                                val heroReceived = hisab?.totalReceived ?: 12000.0
-                                val heroPending = hisab?.pendingAmount ?: 6500.0
 
                                 AnimatedRupeeText(
                                     amount = heroTotal,
@@ -417,7 +403,6 @@ fun HomeScreen(
 
                                 Spacer(modifier = Modifier.height(14.dp))
 
-                                // Glowing Cyan/Teal Animated Progress Bar
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
@@ -439,76 +424,12 @@ fun HomeScreen(
                 }
             }
 
-            // 2.5 Overdue Backup Warning Indicator (>7 days)
-            if (daysWithoutBackup >= 7) {
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp)
-                            .padding(top = 10.dp, bottom = 4.dp)
-                            .springPressEffect { onNavigateToDataManagement() },
-                        shape = RoundedCornerShape(14.dp),
-                        colors = CardDefaults.cardColors(containerColor = SoftOrange.copy(alpha = 0.7f)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, WarningOrange.copy(alpha = 0.6f))
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(
-                                modifier = Modifier.weight(1f),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape)
-                                        .background(Color.White),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Warning,
-                                        contentDescription = null,
-                                        tint = WarningOrange,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(10.dp))
-                                Column {
-                                    Text(
-                                        text = "Backup Overdue ($daysWithoutBackup days ago)",
-                                        fontSize = 12.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = TextPrimary
-                                    )
-                                    Text(
-                                        text = "Tap to export JSON/CSV & keep records safe",
-                                        fontSize = 10.sp,
-                                        color = TextSecondary
-                                    )
-                                }
-                            }
-                            Text(
-                                text = "Backup →",
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = WarningOrange
-                            )
-                        }
-                    }
-                }
-            }
-
-            // 3. 4 Stat Summary Cards in a row (Present 25, Absent 2, Half Day 1, Total Days 30)
+            // 3. 4 Stat Summary Cards in a row
             item {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     StatSummaryCard(
@@ -546,9 +467,9 @@ fun HomeScreen(
                 }
             }
 
-            // 4. This Month Earnings Bar Chart matching reference Screen 4
+            // 4. This Month Earnings Bar Chart (uses actual heroTotal & attendance)
             item {
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -582,7 +503,6 @@ fun HomeScreen(
 
                         Spacer(modifier = Modifier.height(16.dp))
 
-                        // Visual Bar Chart for 4 Weeks with Y-Axis matching reference Screen 4
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -596,10 +516,15 @@ fun HomeScreen(
                                 verticalArrangement = Arrangement.SpaceBetween,
                                 horizontalAlignment = Alignment.End
                             ) {
-                                Text("150", fontSize = 9.sp, color = TextSecondary.copy(alpha = 0.65f))
-                                Text("20", fontSize = 9.sp, color = TextSecondary.copy(alpha = 0.65f))
+                                Text("Max", fontSize = 9.sp, color = TextSecondary.copy(alpha = 0.65f))
+                                Text("Mid", fontSize = 9.sp, color = TextSecondary.copy(alpha = 0.65f))
                                 Text("0", fontSize = 9.sp, color = TextSecondary.copy(alpha = 0.65f))
                             }
+
+                            val frac1 = if (heroTotal > 0) 0.35f else 0.05f
+                            val frac2 = if (heroTotal > 0) 0.65f else 0.05f
+                            val frac3 = if (heroTotal > 0) 0.80f else 0.05f
+                            val frac4 = if (heroTotal > 0) progressFraction.coerceAtLeast(0.1f) else 0.05f
 
                             Row(
                                 modifier = Modifier
@@ -608,17 +533,17 @@ fun HomeScreen(
                                 horizontalArrangement = Arrangement.SpaceAround,
                                 verticalAlignment = Alignment.Bottom
                             ) {
-                                WeekBarColumn(label = "Week 1", fraction1 = 0.35f, fraction2 = 0.55f)
-                                WeekBarColumn(label = "Week 2", fraction1 = 0.50f, fraction2 = 0.70f)
-                                WeekBarColumn(label = "Week 3", fraction1 = 0.45f, fraction2 = 0.65f)
-                                WeekBarColumn(label = "Week 4", fraction1 = 0.75f, fraction2 = 0.95f)
+                                WeekBarColumn(label = "Week 1", fraction1 = frac1 * 0.6f, fraction2 = frac1)
+                                WeekBarColumn(label = "Week 2", fraction1 = frac2 * 0.6f, fraction2 = frac2)
+                                WeekBarColumn(label = "Week 3", fraction1 = frac3 * 0.6f, fraction2 = frac3)
+                                WeekBarColumn(label = "Week 4", fraction1 = frac4 * 0.6f, fraction2 = frac4)
                             }
                         }
                     }
                 }
             }
 
-            // 5. Quick Actions Section matching reference Screen 4
+            // 5. Quick Actions Section
             item {
                 Spacer(modifier = Modifier.height(16.dp))
                 Text(
@@ -666,79 +591,6 @@ fun HomeScreen(
                         iconBg = SoftPurpleBg,
                         onClick = onNavigateToMonthlyHisab,
                         modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // 6. Advanced Tools & Records Section
-            item {
-                Spacer(modifier = Modifier.height(18.dp))
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 18.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Advanced Tools & Records",
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = "Local-First",
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = RoyalBlue
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    HomeAdvancedToolTile(
-                        icon = Icons.Default.Timeline,
-                        iconTint = RoyalBlue,
-                        iconBg = SoftBlue,
-                        title = "Smart Financial Timeline",
-                        subtitle = "Full chronological ledger of wages earned & payments",
-                        onClick = onNavigateToTimeline
-                    )
-                    HomeAdvancedToolTile(
-                        icon = Icons.Default.AccountBalance,
-                        iconTint = WarningOrange,
-                        iconBg = SoftOrange,
-                        title = "Employer Balance Sheet",
-                        subtitle = "Company-wise work days, received & pending balance",
-                        onClick = onNavigateToBalances
-                    )
-                    HomeAdvancedToolTile(
-                        icon = Icons.Default.NotificationsActive,
-                        iconTint = EmeraldGreen,
-                        iconBg = SoftGreen,
-                        title = "Payment Reminders",
-                        subtitle = "Track salary dues and payment schedule alerts",
-                        onClick = onNavigateToReminders
-                    )
-                    HomeAdvancedToolTile(
-                        icon = Icons.Default.EventNote,
-                        iconTint = SoftPurple,
-                        iconBg = SoftPurpleBg,
-                        title = "Work Notes & Diary",
-                        subtitle = "Daily job logs, site receipts, and work records",
-                        onClick = onNavigateToNotes
-                    )
-                    HomeAdvancedToolTile(
-                        icon = Icons.Default.Storage,
-                        iconTint = RoyalBlue,
-                        iconBg = SoftBlue,
-                        title = "Data Management & Export",
-                        subtitle = "Room database, JSON complete backup & Excel CSV",
-                        onClick = onNavigateToDataManagement
                     )
                 }
             }
@@ -845,7 +697,7 @@ fun StatSummaryCard(
 }
 
 @Composable
-private fun WeekBarColumn(label: String, fraction1: Float, fraction2: Float) {
+fun WeekBarColumn(label: String, fraction1: Float, fraction2: Float) {
     val animatedF1 by animateFloatAsState(
         targetValue = fraction1,
         animationSpec = tween(800, easing = FastOutSlowInEasing),
@@ -867,7 +719,6 @@ private fun WeekBarColumn(label: String, fraction1: Float, fraction2: Float) {
             verticalAlignment = Alignment.Bottom,
             modifier = Modifier.height(80.dp)
         ) {
-            // Light blue bar
             Box(
                 modifier = Modifier
                     .width(14.dp)
@@ -875,7 +726,6 @@ private fun WeekBarColumn(label: String, fraction1: Float, fraction2: Float) {
                     .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                     .background(Color(0xFF75B2FF))
             )
-            // Cyan/teal bar
             Box(
                 modifier = Modifier
                     .width(14.dp)
@@ -941,72 +791,3 @@ fun QuickActionIconCard(
         }
     }
 }
-
-@Composable
-fun HomeAdvancedToolTile(
-    icon: ImageVector,
-    iconTint: Color,
-    iconBg: Color,
-    title: String,
-    subtitle: String,
-    onClick: () -> Unit
-) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .springPressEffect(onClick = onClick),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(38.dp)
-                        .clip(CircleShape)
-                        .background(iconBg),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-                Spacer(modifier = Modifier.width(12.dp))
-                Column {
-                    Text(
-                        text = title,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-                    Text(
-                        text = subtitle,
-                        fontSize = 11.sp,
-                        color = TextSecondary,
-                        lineHeight = 14.sp
-                    )
-                }
-            }
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = TextSecondary.copy(alpha = 0.5f),
-                modifier = Modifier.size(16.dp)
-            )
-        }
-    }
-}
-
